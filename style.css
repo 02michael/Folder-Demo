@@ -1,0 +1,242 @@
+@import url(https://fonts.bunny.net/css?family=jura:300,500);
+@layer base, demo;
+
+@layer demo {
+  :root{
+		/* note - I try to use verbose custom property names to help in the understanding of the code */
+    --nav-indicator-hover: light-dark(rgb(202 213 226 / .75),rgb(49 65 88 / .75)); 
+    --nav-indicator-active: dodgerblue;
+    --nav-indicator-radius: 10px;
+    --nav-indicator-inverted-radius: calc(var(--nav-indicator-radius) / 1.5);
+    --nav-indicator-inverted-width-before: var(--nav-indicator-inverted-radius);
+    --nav-indicator-inverted-width-after: var(--nav-indicator-inverted-radius);
+
+    --nav-trans-duration: 350ms;
+    --nav-trans-easing: ease-in-out;
+		
+    --nav-link-color: light-dark(black,white);
+		--nav-link-color-hover: light-dark(black,white);
+		--nav-link-color-active: white;
+		--nav-link-padding: .5em 1.5em;
+		
+		--content-bg-color: var(--nav-indicator-active);
+		--content-text-color: white;
+    --content-radius-tl: 10px;
+    --content-radius-tr: 10px;
+    --content-radius-bl: 10px;
+    --content-radius-br: 10px;
+    --content-trans-duration: 350ms;
+		--content-trans-easing: ease-in-out;
+  }
+
+  
+  .tabbed-content{
+    .content{
+      display: grid;
+      min-height: 200px;
+      padding: 1rem;
+      background: var(--content-bg-color);
+      border-radius: var(--content-radius-tl) var(--content-radius-tr) var(--content-radius-bl) var(--content-radius-br);
+      transition: border-radius var(--nav-trans-duration) var(--nav-trans-easing);
+      /*overflow: clip;*/
+      div{
+				color: var(--content-text-color);
+        grid-area: 1 / 1;
+				filter: blur(10px) opacity(0);
+        transition: filter var(--content-trans-duration) var(--content-trans-easing);
+				pointer-events: none;
+        &:target{
+					filter: blur(0) opacity(1);
+					pointer-events: auto;
+					
+          /* delay until previous content panel has left the room */
+          transition-delay: var(--content-trans-duration); 
+        }
+      }
+    }
+		/* tabs */
+		nav{
+			
+    scroll-target-group: auto;
+			anchor-name: --hovered-option;
+			display: flex;
+			align-items: center;
+			/* hovered tab indicator */
+			&::before{
+				content: '';
+				position: absolute;
+				z-index: -1;
+				pointer-events: none;
+				background: var(--nav-indicator-hover);
+				border-radius: var(--nav-indicator-inverted-radius);
+				transition:  var(--nav-trans-duration) var(--nav-trans-easing);
+				position-anchor: --hovered-option;
+				top: calc(anchor(bottom) + 5px);
+				left: calc(anchor(left) + 10px);
+				right: calc(anchor(right) + 10px);
+				bottom: calc(anchor(bottom) + 5px);
+			}
+			&:has(a:hover)::before{
+				top: calc(anchor(top) + 5px);
+			}
+			/* active tab indicator */
+			.indicator{
+				position: absolute;
+				z-index: -1;
+				pointer-events: none;
+				background: var(--nav-indicator-active);
+				border-radius: var(--nav-indicator-radius) var(--nav-indicator-radius) 0 0;
+				transition-property: top,right,bottom,left;
+				transition-duration: var(--nav-trans-duration);
+				transition-timing-function: var(--nav-trans-easing);
+				position-anchor: --active-option;
+				top: anchor(top);
+				left: anchor(left);
+				right: anchor(right);
+				bottom: anchor(bottom);
+				/* inverted corners either side of active tab */
+				@supports (position-anchor: --test) and (corner-shape: scoop) {
+					&::before,
+					&::after{
+						content: '';
+						position: absolute;
+						bottom: 0;
+						aspect-ratio: 1;
+						background-color: inherit;
+						corner-shape: scoop;
+						transition: width var(--nav-trans-duration) linear;
+					}
+					&::before{
+						right: 100%;
+						width: var(--nav-indicator-inverted-width-before);
+						border-radius: var(--nav-indicator-inverted-radius) 0 0 0;
+					}
+					&::after{
+						left: 100%;
+						width: var(--nav-indicator-inverted-width-after);
+						border-radius: 0 var(--nav-indicator-inverted-radius) 0 0;
+					}
+				}
+			}
+			/* tab hash links */
+			& > a{
+				display: block;
+				text-decoration: none;
+				padding: var(--nav-link-padding);
+				color: var(--nav-link-color);
+				font-size: 1rem;
+				transition: color 200ms ease-in-out;
+				
+				
+				/* inital active tab on load */
+				&.active{
+					anchor-name: --active-option;
+					color: var(--nav-link-color-active);
+				}
+				/* tab hover - set hover anchor name to this element */
+				&:where(:hover,:focus-visible){ /* Note -  focus-visible is not currently working here */
+					color: var(--nav-link-color-hover);
+					anchor-name: --hovered-option;
+				}
+				@supports not (position-anchor: --test) {
+					border-radius: var(--nav-indicator-radius) var(--nav-indicator-radius) 0 0;
+					/* fallback hover */
+					&:where(:hover,:focus-visible){
+						color: hotpink;
+						outline: 1px dashed hotpink;
+					}
+					&:target-current{
+						background-color:var(--nav-indicator-active);
+					}
+				}
+			}
+		}
+	}
+}
+/* active link - anchor-name */
+body:has(:target#panel-1) nav > a[href="#panel-1"],
+body:has(:target#panel-2) nav > a[href="#panel-2"],
+body:has(:target#panel-3) nav > a[href="#panel-3"],
+body:has(:target#panel-4) nav > a[href="#panel-4"]{
+  anchor-name: --active-option;
+	color: var(--nav-link-color-active);
+}
+/* first nav link - no left indicator before and no content top-left border radius*/
+body:not(:has(:target)):has(.active),
+body:has(:target:first-of-type){
+    --nav-indicator-inverted-width-before: 0;
+    --content-radius-tl: 0;
+}
+/* last nav link - no left indicator before and no content top-right border radius */
+body:has(:target:last-of-type){
+    --nav-indicator-inverted-width-after: 0;
+    --content-radius-tr: 0;
+} 
+/* show first panel if no active target */
+body:not(:has(:target)):has(.active) .content > :first-child{
+	filter: blur(0) opacity(1);
+	pointer-events: auto;
+}
+
+ /* general styling not relevant for this demo */
+@layer base {
+	* {
+		box-sizing: border-box;
+	}
+	:root {
+		color-scheme: light dark;
+		--bg-dark: rgb(12, 10, 9);
+		--bg-light: rgb(248, 244, 238);
+		--txt-light: rgb(10, 10, 10);
+		--txt-dark: rgb(245, 245, 245);;
+		--line-light: rgba(0 0 0 / .25);
+		--line-dark: rgba(255 255 255 / .25);
+    
+    --clr-bg: light-dark(var(--bg-light), var(--bg-dark));
+    --clr-txt: light-dark(var(--txt-light), var(--txt-dark));
+    --clr-lines: light-dark(var(--line-light), var(--line-dark));
+	}
+ 
+	body {
+		background-color: var(--clr-bg);
+		color: var(--clr-txt);
+		min-height: 100svh;
+		margin: 0;
+		padding: 2rem;
+		font-family: "Jura", sans-serif;
+		font-size: 1rem;
+		line-height: 1.5;
+    display: grid;
+    place-content: center;
+    gap: 2rem;
+		&::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: repeating-linear-gradient(
+          transparent,
+          transparent 1px,
+          light-dark(rgba(54 65 83 / .15),rgba(214 211 209 / .1)) 0 3px
+        );
+    
+      background-size: auto 100%;
+      pointer-events: none;
+      z-index: -2;
+    }
+		
+		@supports (not (position-anchor: --test)) or (not (corner-shape: scoop)) {
+
+		 &::before {
+				content:"Sorry, your browser doesn't support anchor-positioning and/or corner-shape";
+				position: fixed;
+				top: 2rem;
+				left: 50%;
+				translate: -50% 0;
+				font-size: 0.8rem;
+			}
+		}
+	}
+}
